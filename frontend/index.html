@@ -1,0 +1,627 @@
+﻿<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warehouse Production App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <div class="bg-shape bg-shape-1"></div>
+  <div class="bg-shape bg-shape-2"></div>
+
+  <section id="authScreen" class="min-vh-100 d-flex align-items-center justify-content-center p-3">
+    <div class="auth-card w-100">
+      <div class="row g-0">
+        <div class="col-12 col-lg-6 auth-hero p-4 p-md-5">
+          <p class="small text-uppercase fw-semibold mb-2">Production Warehouse</p>
+          <h1 class="mb-3">ระบบคลังวัสดุซ่อมท่อน้ำ</h1>
+          <p class="mb-4 text-soft">รองรับเบิก-คืนสินค้า, กระทบยอด Excel และรายงานแยกตามกองงาน</p>
+          <div class="auth-tip">
+            <p class="mb-2 fw-semibold">Login ด้วยบัญชีที่แอดมินสร้าง</p>
+            <p class="mb-0">หากยังไม่มีบัญชี ให้ติดต่อผู้ดูแลระบบ</p>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6 auth-form-wrap p-4 p-md-5">
+          <h2 class="h4 mb-3">เข้าสู่ระบบ</h2>
+          <form id="loginForm" class="vstack gap-3">
+            <div>
+              <label for="loginUsername" class="form-label">Username</label>
+              <input id="loginUsername" class="form-control" required>
+            </div>
+            <div>
+              <label for="loginPassword" class="form-label">Password</label>
+              <input id="loginPassword" type="password" class="form-control" required>
+            </div>
+            <button class="btn btn-brand w-100" type="submit">
+              <i class="bi bi-box-arrow-in-right me-1"></i>เข้าสู่ระบบ
+            </button>
+          </form>
+          <div id="loginNotice" class="alert alert-danger mt-3 py-2 px-3 d-none"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="appShell" class="d-none">
+    <div class="row g-0 min-vh-100">
+      <aside class="col-12 col-lg-3 col-xl-2 app-sidebar">
+        <div class="p-3 p-md-4 sidebar-sticky">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-4">
+            <div class="d-flex align-items-center gap-2">
+              <div class="logo-icon"><i class="bi bi-tools"></i></div>
+              <div class="sidebar-brand-text">
+                <h2 class="h6 mb-0">KLL</h2>
+                <small id="sidebarRole" class="text-white"></small>
+              </div>
+            </div>
+            <button id="sidebarToggleBtn" type="button" class="btn btn-sm btn-outline-light sidebar-toggle-btn d-none d-lg-inline-flex" aria-label="ย่อเมนูด้านซ้าย">
+              <i class="bi bi-layout-sidebar-inset"></i>
+            </button>
+          </div>
+          <nav class="nav flex-column app-nav gap-1">
+            <button type="button" data-view="dashboard" class="nav-link active"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</button>
+            <button type="button" data-view="products" class="nav-link"><i class="bi bi-box-seam me-2"></i>Products</button>
+            <button type="button" data-view="workunits" class="nav-link"><i class="bi bi-diagram-3 me-2"></i>Work Units</button>
+            <button type="button" data-view="bills" class="nav-link"><i class="bi bi-receipt-cutoff me-2"></i>Bills</button>
+            <button type="button" data-view="reconcile" class="nav-link"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Reconcile</button>
+            <button type="button" data-view="users" class="nav-link admin-only"><i class="bi bi-people me-2"></i>Users</button>
+            <button type="button" data-view="audit" class="nav-link"><i class="bi bi-journal-check me-2"></i>Audit Log</button>
+          </nav>
+          <button id="logoutBtn" class="btn btn-outline-light mt-4 w-100" type="button">
+            <i class="bi bi-box-arrow-left me-1"></i>Logout
+          </button>
+        </div>
+      </aside>
+
+      <main class="col-12 col-lg-9 col-xl-10 p-3 p-md-4 app-main">
+        <header class="top-card mb-3 mb-md-4">
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+            <div>
+              <h1 id="viewTitle" class="h4 mb-1">Dashboard</h1>
+              <p class="mb-0 text-muted">
+                ผู้ใช้: <span id="topUser">-</span> | อัปเดต: <span id="topTime">-</span>
+              </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <select id="warehouseSelect" class="form-select form-select-sm control-input"></select>
+              <button id="refreshAllBtn" type="button" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-repeat me-1"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div id="appNotice" class="alert py-2 px-3 d-none mb-3"></div>
+
+        <section data-page="dashboard" class="page-section">
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4">
+              <div class="kpi-card">
+                <p class="kpi-label">บิล Confirmed (1 วัน)</p>
+                <h3 id="kpiConfirmed1d">0</h3>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="kpi-card">
+                <p class="kpi-label">บิล Confirmed (7 วัน)</p>
+                <h3 id="kpiConfirmed7d">0</h3>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="kpi-card">
+                <p class="kpi-label">บิล Confirmed (30 วัน)</p>
+                <h3 id="kpiConfirmed30d">0</h3>
+              </div>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-12 col-xl-6">
+              <div class="panel-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h4 class="h6 mb-0">Low Stock</h4>
+                  <button type="button" id="goProductsBtn" class="btn btn-outline-primary btn-sm">ดูสินค้า</button>
+                </div>
+                <div id="dashboardLowStock" class="vstack gap-2"></div>
+              </div>
+            </div>
+            <div class="col-12 col-xl-6">
+              <div class="panel-card">
+                <h4 class="h6 mb-2">Recent Bills</h4>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Bill No</th>
+                        <th>ประเภท</th>
+                        <th>ทีม</th>
+                        <th>เวลา</th>
+                        <th>สถานะ</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashboardRecentBillsBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section data-page="products" class="page-section d-none">
+          <div class="panel-card mb-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-2">
+              <div class="d-flex flex-wrap gap-2">
+                <input id="productSearchInput" class="form-control form-control-sm control-input" placeholder="ค้นหาโค้ด/ชื่อสินค้า">
+                <select id="productStatusFilter" class="form-select form-select-sm control-input">
+                  <option value="all">สินค้าทั้งหมด</option>
+                  <option value="in_stock">เฉพาะที่มีคงเหลือ</option>
+                  <option value="healthy">Healthy</option>
+                  <option value="low">Low</option>
+                </select>
+                <select id="productSortSelect" class="form-select form-select-sm control-input" title="เรียงลำดับสินค้า">
+                  <option value="code_asc">เรียงตามรหัส WLMA</option>
+                  <option value="qty_asc">คงเหลือน้อยสุด</option>
+                  <option value="qty_desc">คงเหลือมากสุด</option>
+                  <option value="move_asc">เคลื่อนไหววันนี้น้อยสุด</option>
+                  <option value="move_desc">เคลื่อนไหววันนี้มากสุด</option>
+                </select>
+                <select id="productPageSizeSelect" class="form-select form-select-sm control-input" title="จำนวนแถวต่อหน้า">
+                  <option value="25">25 แถว</option>
+                  <option value="50">50 แถว</option>
+                  <option value="100">100 แถว</option>
+                </select>
+                <input id="productAsOfDateInput" type="date" class="form-control form-control-sm control-input" title="ดูยอดย้อนหลัง ณ วันที่">
+                <button id="productAsOfClearBtn" type="button" class="btn btn-outline-secondary btn-sm">ยอดปัจจุบัน</button>
+                <button id="productClearFiltersBtn" type="button" class="btn btn-outline-danger btn-sm">ล้างตัวกรอง</button>
+              </div>
+              <button id="openProductModalBtn" type="button" class="btn btn-brand btn-sm auth-only-edit">
+                <i class="bi bi-plus-circle me-1"></i>เพิ่มสินค้า
+              </button>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+              <span id="productListMeta" class="small text-muted">รวม 0 รายการ</span>
+              <div id="productListPager" class="d-flex align-items-center gap-2"></div>
+            </div>
+            <p id="productAsOfHint" class="text-muted small mb-0 mt-2">กำลังแสดงยอดคงเหลือปัจจุบัน</p>
+          </div>
+          <div class="panel-card">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Product ID</th>
+                    <th>Code WLMA</th>
+                    <th>ชื่อสินค้า</th>
+                    <th>หน่วย</th>
+                    <th>คงเหลือ</th>
+                    <th>เคลื่อนไหววันนี้</th>
+                    <th>Min</th>
+                    <th>สถานะ</th>
+                    <th class="text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="productTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section data-page="workunits" class="page-section d-none">
+          <div class="panel-card mb-3">
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <p class="mb-0 text-muted">คลิกกองงานเพื่อดูรายการเบิกหรือคืนในช่วงเวลา</p>
+              <button id="openWorkUnitModalBtn" type="button" class="btn btn-brand btn-sm admin-only">
+                <i class="bi bi-plus-circle me-1"></i>เพิ่มกองงาน
+              </button>
+            </div>
+          </div>
+          <div class="workunits-layout">
+            <div class="panel-card h-100">
+                <div class="table-responsive">
+                  <table class="table table-striped align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        <th>ชื่อกองงาน</th>
+                        <th>หัวหน้ากองงาน</th>
+                        <th class="text-end admin-only">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="workUnitTableBody"></tbody>
+                  </table>
+                </div>
+            </div>
+            <div id="workunitsSplitter" class="workunits-splitter" role="separator" aria-label="ปรับสัดส่วนกองงานและรายการเบิก" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="75" aria-valuenow="34" tabindex="0">
+              <div class="workunits-splitter-knob" aria-hidden="true"></div>
+            </div>
+            <div class="panel-card h-100">
+                <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-2">
+                  <h4 id="teamIssueTitle" class="h6 mb-0">รายการเบิกกองงาน: -</h4>
+                  <div class="team-issue-filters d-flex gap-2">
+                    <select id="teamIssueMode" class="form-select form-select-sm" title="ประเภทการแสดงผล">
+                      <option value="issue">การเบิก</option>
+                      <option value="return">การคืน</option>
+                    </select>
+                    <input id="teamIssueFrom" type="date" class="form-control form-control-sm">
+                    <input id="teamIssueTo" type="date" class="form-control form-control-sm">
+                    <button id="teamIssueFilterBtn" class="btn btn-outline-primary btn-sm" type="button">ค้นหา</button>
+                  </div>
+                </div>
+                <div class="table-responsive mb-3">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        <th>ชื่อสินค้า</th>
+                        <th>หน่วย</th>
+                        <th id="teamIssueSummaryQtyHead" class="text-end">รวมเบิก</th>
+                      </tr>
+                    </thead>
+                    <tbody id="teamIssueSummaryBody"></tbody>
+                  </table>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>เวลา</th>
+                        <th>Bill</th>
+                        <th>Code</th>
+                        <th>ชื่อสินค้า</th>
+                        <th class="text-end">Qty</th>
+                      </tr>
+                    </thead>
+                    <tbody id="teamIssueDetailBody"></tbody>
+                  </table>
+                </div>
+            </div>
+          </div>
+        </section>
+
+        <section data-page="bills" class="page-section d-none">
+          <div class="panel-card mb-3 auth-only-edit">
+            <h4 class="h6 mb-3">สร้างเอกสารคลัง</h4>
+            <form id="billForm">
+              <div class="row g-2 mb-2">
+                <div class="col-12 col-md-3">
+                  <label for="billTypeSelect" class="form-label">ประเภทเอกสาร</label>
+                  <select id="billTypeSelect" class="form-select form-select-sm" required>
+                    <option value="ISSUE_TO_TEAM">เบิกสินค้าให้กองงาน</option>
+                    <option value="RETURN_FROM_TEAM">คืนสินค้าจากกองงาน</option>
+                    <option value="RETURN_FROM_WLMA">คืนสินค้าจาก WLMA</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-3">
+                  <label for="billTeamSearchInput" class="form-label">กองงาน</label>
+                  <input id="billTeamSearchInput" list="billTeamList" class="form-control form-control-sm" placeholder="พิมพ์โค้ด/ชื่อกองงาน">
+                  <datalist id="billTeamList"></datalist>
+                  <input id="billTeamIdInput" type="hidden">
+                </div>
+                <div class="col-12 col-md-3">
+                  <label for="billSenderInput" class="form-label">ผู้ส่ง</label>
+                  <input id="billSenderInput" class="form-control form-control-sm" required>
+                </div>
+                <div class="col-12 col-md-3">
+                  <label for="billReceiverInput" class="form-label">ผู้รับ</label>
+                  <input id="billReceiverInput" class="form-control form-control-sm" required>
+                </div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-12 col-md-4">
+                  <label for="billCreatedByInput" class="form-label">ผู้บันทึก (อัตโนมัติจากบัญชี)</label>
+                  <input id="billCreatedByInput" class="form-control form-control-sm" readonly>
+                </div>
+                <div class="col-12 col-md-8">
+                  <label for="billRemarkInput" class="form-label">หมายเหตุ</label>
+                  <input id="billRemarkInput" class="form-control form-control-sm" placeholder="ไม่บังคับ">
+                </div>
+              </div>
+              <div id="billItemsWrap" class="vstack gap-2 mb-3"></div>
+              <div class="d-flex flex-wrap gap-2">
+                <button id="addBillItemBtn" type="button" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-plus-lg me-1"></i>เพิ่มรายการสินค้า
+                </button>
+                <button type="submit" data-action="draft" class="btn btn-outline-secondary btn-sm auth-only-edit">บันทึก Draft</button>
+                <button type="submit" data-action="confirm" class="btn btn-brand btn-sm auth-only-edit">บันทึกและ Confirm</button>
+              </div>
+            </form>
+          </div>
+          <div class="bills-layout">
+            <div class="panel-card bills-list-card">
+              <div class="bills-toolbar-line mb-2">
+                <h4 class="h6 mb-0 me-1">รายการเอกสาร</h4>
+                <select id="billStatusFilter" class="form-select form-select-sm control-input">
+                  <option value="all">ทุกสถานะ</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+                <select id="billTypeFilter" class="form-select form-select-sm control-input">
+                  <option value="all">ทุกประเภท</option>
+                  <option value="ISSUE_TO_TEAM">เบิกสินค้าให้กองงาน</option>
+                  <option value="RETURN_FROM_TEAM">คืนสินค้าจากกองงาน</option>
+                  <option value="RETURN_FROM_WLMA">คืนสินค้าจาก WLMA</option>
+                </select>
+                <input id="billFromInput" type="date" class="form-control form-control-sm control-input" title="ตั้งแต่วันที่">
+                <input id="billToInput" type="date" class="form-control form-control-sm control-input" title="ถึงวันที่">
+                <select id="billPageSizeSelect" class="form-select form-select-sm control-input" title="จำนวนบิลต่อหน้า">
+                  <option value="25">25 บิล</option>
+                  <option value="50">50 บิล</option>
+                  <option value="100">100 บิล</option>
+                </select>
+                <button id="billClearFiltersBtn" type="button" class="btn btn-outline-danger btn-sm">ล้างตัวกรอง</button>
+                <span id="billListMeta" class="small text-muted ms-1">รวม 0 บิล</span>
+                <div id="billListPager" class="d-flex align-items-center gap-2"></div>
+              </div>
+              <div class="table-responsive bills-list-scroll">
+                <table class="table align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Bill No</th>
+                      <th>ประเภท</th>
+                      <th>ทีม</th>
+                      <th>ผู้สร้าง</th>
+                      <th>เวลา</th>
+                      <th>สถานะ</th>
+                      <th class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="billTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div id="billsSplitter" class="bills-splitter" role="separator" aria-label="ปรับสัดส่วนรายการและรายละเอียดบิล" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="75" aria-valuenow="65" tabindex="0">
+              <div class="bills-splitter-knob" aria-hidden="true"></div>
+            </div>
+            <div class="panel-card">
+              <h4 class="h6 mb-2">รายละเอียดบิล</h4>
+              <div id="billDetailContent" class="small text-muted">เลือกบิลจากตารางเพื่อดูรายละเอียดและรายการสินค้า</div>
+            </div>
+          </div>
+        </section>
+
+        <section data-page="reconcile" class="page-section d-none">
+          <div class="panel-card mb-3">
+            <h4 class="h6 mb-2">กระทบยอดจากไฟล์ Excel</h4>
+            <p id="reconcileDescription" class="text-muted small mb-3">ไฟล์ค่างาน: ใช้ทีมจากคอลัมน์ I, รหัสอุปกรณ์จากคอลัมน์ J (เฉพาะเลข 9 หลัก) และยอดจากคอลัมน์ระบบ/จำนวน เพื่อเทียบกับเบิก-คืนในระบบ</p>
+            <div class="d-flex flex-column flex-lg-row gap-2">
+              <select id="reconcileModeSelect" class="form-select form-select-sm control-input">
+                <option value="legacy">การกระทบยอด</option>
+                <option value="wlma">WLMA</option>
+              </select>
+              <input id="excelFileInput" type="file" accept=".xls,.xlsx" class="form-control form-control-sm">
+              <input id="reconcileFromInput" type="date" class="form-control form-control-sm">
+              <input id="reconcileToInput" type="date" class="form-control form-control-sm">
+              <button id="runReconcileBtn" type="button" class="btn btn-brand btn-sm">เริ่มกระทบยอด</button>
+              <button id="exportSourceExcelBtn" type="button" class="btn btn-outline-secondary btn-sm">Export ระบบ (แยกกองงาน)</button>
+              <button id="exportDatasetExcelBtn" type="button" class="btn btn-outline-primary btn-sm">Export Dataset (แยกกองงาน)</button>
+              <button id="exportReconExcelBtn" type="button" class="btn btn-outline-success btn-sm">Export ผลต่าง (ระบบ-Dataset)</button>
+            </div>
+            <div id="reconcileProgressWrap" class="mt-2 d-none">
+              <div class="d-flex justify-content-between small text-muted mb-1">
+                <span id="reconcileProgressText">กำลังประมวลผล...</span>
+                <span id="reconcileProgressPercent">0%</span>
+              </div>
+              <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                <div id="reconcileProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+              </div>
+            </div>
+            <div id="reconcileMeta" class="small text-muted mt-2"></div>
+          </div>
+          <div class="panel-card">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead id="reconcileTableHead">
+                  <tr>
+                    <th>ทีม</th>
+                    <th>รหัสวัสดุ</th>
+                    <th>รายการ</th>
+                    <th class="text-end">ระบบ</th>
+                    <th class="text-end">เบิก</th>
+                    <th class="text-end">คืน</th>
+                    <th class="text-end">สุทธิ</th>
+                    <th class="text-end">Diff</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody id="reconcileTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section data-page="users" class="page-section d-none">
+          <div class="panel-card mb-3 admin-only">
+            <h4 class="h6 mb-2">สร้างผู้ใช้งาน</h4>
+            <form id="userForm" class="row g-2">
+              <div class="col-12 col-md-3">
+                <input id="newUsernameInput" class="form-control form-control-sm" placeholder="username" minlength="3" maxlength="60" required>
+              </div>
+              <div class="col-12 col-md-3">
+                <input id="newDisplayNameInput" class="form-control form-control-sm" placeholder="display name" minlength="2" maxlength="120" required>
+              </div>
+              <div class="col-12 col-md-2">
+                <input id="newPasswordInput" type="password" class="form-control form-control-sm" placeholder="password (อย่างน้อย 6 ตัว)" minlength="6" maxlength="120" required>
+              </div>
+              <div class="col-12 col-md-2">
+                <select id="newRoleInput" class="form-select form-select-sm">
+                  <option value="STOREKEEPER">STOREKEEPER</option>
+                  <option value="VIEWER">VIEWER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-2 d-grid">
+                <button class="btn btn-brand btn-sm" type="submit">เพิ่มผู้ใช้</button>
+              </div>
+            </form>
+          </div>
+          <div class="panel-card">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section data-page="audit" class="page-section d-none">
+          <div class="panel-card">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>เวลา</th>
+                    <th>ผู้ใช้</th>
+                    <th>Action</th>
+                    <th>Target</th>
+                    <th>Detail</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="productModalTitle" class="modal-title">เพิ่มสินค้า</h5>
+          <button class="btn-close" type="button" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="productForm">
+          <div class="modal-body">
+            <input id="productFormId" type="hidden">
+            <div class="row g-2">
+              <div class="col-12">
+                <label for="productCodeInput" class="form-label">Code WLMA</label>
+                <input id="productCodeInput" class="form-control form-control-sm" required>
+              </div>
+              <div class="col-12">
+                <label for="productNameInput" class="form-label">ชื่อสินค้า</label>
+                <input id="productNameInput" class="form-control form-control-sm" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="productUnitInput" class="form-label">หน่วย</label>
+                <input id="productUnitInput" class="form-control form-control-sm" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="productMinInput" class="form-label">Min Stock</label>
+                <input id="productMinInput" type="number" min="0" class="form-control form-control-sm" required>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button class="btn btn-brand btn-sm" type="submit">บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="workUnitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="workUnitModalTitle" class="modal-title">เพิ่มกองงาน</h5>
+          <button class="btn-close" type="button" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="workUnitForm">
+          <div class="modal-body">
+            <input id="workUnitFormId" type="hidden">
+            <div class="vstack gap-2">
+              <div>
+                <label for="workUnitCodeInput" class="form-label">Code</label>
+                <input id="workUnitCodeInput" class="form-control form-control-sm" required>
+              </div>
+              <div>
+                <label for="workUnitNameInput" class="form-label">ชื่อกองงาน</label>
+                <input id="workUnitNameInput" class="form-control form-control-sm" required>
+              </div>
+              <div>
+                <label for="workUnitLeaderInput" class="form-label">หัวหน้ากองงาน</label>
+                <input id="workUnitLeaderInput" class="form-control form-control-sm">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button class="btn btn-brand btn-sm" type="submit">บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="adjustStockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">ปรับสต๊อกสินค้า</h5>
+          <button class="btn-close" type="button" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="adjustStockForm">
+          <div class="modal-body">
+            <input id="adjustStockProductIdInput" type="hidden">
+            <div class="vstack gap-2">
+              <div>
+                <label for="adjustStockProductLabelInput" class="form-label">สินค้า</label>
+                <input id="adjustStockProductLabelInput" class="form-control form-control-sm" readonly>
+              </div>
+              <div class="row g-2">
+                <div class="col-12 col-md-5">
+                  <label for="adjustStockDirectionSelect" class="form-label">ประเภทการปรับ</label>
+                  <select id="adjustStockDirectionSelect" class="form-select form-select-sm">
+                    <option value="IN">เพิ่มเข้า (+)</option>
+                    <option value="OUT">ตัดออก (-)</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-7">
+                  <label for="adjustStockQtyInput" class="form-label">จำนวน</label>
+                  <input id="adjustStockQtyInput" type="number" min="0.01" step="0.01" class="form-control form-control-sm" required>
+                </div>
+              </div>
+              <div>
+                <label for="adjustStockRecorderInput" class="form-label">ผู้บันทึก (บังคับ)</label>
+                <input id="adjustStockRecorderInput" class="form-control form-control-sm" maxlength="150" required readonly aria-readonly="true">
+              </div>
+              <div>
+                <label for="adjustStockRemarkInput" class="form-label">หมายเหตุ (บังคับ)</label>
+                <textarea id="adjustStockRemarkInput" class="form-control form-control-sm" rows="3" maxlength="1000" required></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button class="btn btn-brand btn-sm" type="submit">บันทึกการปรับสต๊อก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
+
